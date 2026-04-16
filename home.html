@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>DevOps Demo | TaskFlow CI/CD Pipeline</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(145deg, #f0f4fa 0%, #e9eef4 100%);
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+    }
+
+    /* main container */
+    .demo-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* header + pipeline badge */
+    .devops-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      gap: 1rem;
+    }
+
+    .title-section h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #1a2c3e, #1e4a76);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.3px;
+    }
+
+    .title-section p {
+      color: #2c3e50;
+      margin-top: 0.3rem;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    .pipeline-status {
+      background: #ffffffdd;
+      backdrop-filter: blur(8px);
+      border-radius: 60px;
+      padding: 0.6rem 1.2rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      border: 1px solid rgba(46, 125, 180, 0.2);
+    }
+
+    .pipeline-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1e2a36;
+      padding: 0.3rem 1rem;
+      border-radius: 40px;
+      color: white;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .pipeline-badge .icon {
+      font-size: 1.1rem;
+    }
+
+    .ci-badge {
+      background: #0b5e7e;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: #eef2ff;
+      padding: 0.25rem 0.8rem;
+      border-radius: 30px;
+    }
+
+    .green-dot {
+      width: 10px;
+      height: 10px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px #a7f3d0;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.5; transform: scale(0.9);}
+      100% { opacity: 1; transform: scale(1.2);}
+    }
+
+    /* pipeline visualization row */
+    .pipeline-visual {
+      background: white;
+      border-radius: 28px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.05);
+      border: 1px solid #e2edf2;
+    }
+
+    .pipeline-steps {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 100px;
+      background: #f8fafc;
+      border-radius: 40px;
+      padding: 0.6rem 0.8rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.8rem;
+      color: #334155;
+      border: 1px solid #e0e7ef;
+      transition: all 0.2s;
+    }
+
+    .step.active {
+      background: #0f3b5c;
+      border-color: #0f3b5c;
+      color: white;
+      box-shadow: 0 6px 12px -6px rgba(15,59,92,0.3);
+    }
+
+    .step.success {
+      background: #e0f2fe;
+      border-color: #7ab7d4;
+      color: #0c4a6e;
+    }
+
+    .arrow {
+      font-size: 1.3rem;
+      color: #8ba0b5;
+      font-weight: 300;
+    }
+
+    /* main content: task manager */
+    .task-dashboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+    }
+
+    .task-panel {
+      flex: 2;
+      min-width: 260px;
+      background: white;
+      border-radius: 32px;
+      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+      overflow: hidden;
+      border: 1px solid #eef3f8;
+    }
+
+    .panel-header {
+      background: #ffffff;
+      padding: 1.2rem 1.8rem;
+      border-bottom: 2px solid #eef2f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+
+    .panel-header h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1e2a3a;
+    }
+
+    .task-count {
+      background: #eef2ff;
+      padding: 0.25rem 0.8rem;
+      border-radius: 30px;
+      font-weight: 600;
+      color: #1f4e7a;
+    }
+
+    .task-list {
+      padding: 0.5rem 0;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.8rem;
+      border-bottom: 1px solid #ecf3f8;
+      transition: background 0.1s ease;
+    }
+
+    .task-item:hover {
+      background: #fafdff;
+    }
+
+    .task-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex: 3;
+    }
+
+    .task-check {
+      transform: scale(1.2);
+      cursor: pointer;
+      accent-color: #1f6392;
+    }
+
+    .task-title {
+      font-weight: 500;
+      color: #1f2d3d;
+      word-break: break-word;
+      flex: 1;
+    }
+
+    .task-title.completed {
+      text-decoration: line-through;
+      color: #8ba0b0;
+    }
+
+    .task-actions {
+      display: flex;
+      gap: 0.8rem;
+    }
+
+    .edit-btn, .delete-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: 0.1s;
+      padding: 0.2rem 0.4rem;
+      border-radius: 30px;
+    }
+
+    .edit-btn:hover {
+      background: #eef2ff;
+      color: #2c6e9e;
+    }
+
+    .delete-btn:hover {
+      background: #ffe6e5;
+      color: #d1453b;
+    }
+
+    /* add / edit form */
+    .form-panel {
+      flex: 1.2;
+      min-width: 280px;
+      background: white;
+      border-radius: 32px;
+      padding: 1.6rem 1.8rem;
+      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.08);
+      border: 1px solid #eef3f8;
+      height: fit-content;
+    }
+
+    .form-panel h3 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+      color: #1f4662;
+    }
+
+    .input-group {
+      margin-bottom: 1.2rem;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #2c4f6e;
+      margin-bottom: 0.4rem;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 20px;
+      border: 1.5px solid #e0e9f0;
+      font-size: 0.95rem;
+      transition: 0.2s;
+      outline: none;
+    }
+
+    .input-group input:focus {
+      border-color: #2c7cb6;
+      box-shadow: 0 0 0 3px rgba(44,124,182,0.1);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.8rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn-primary {
+      background: #1f6392;
+      border: none;
+      padding: 0.7rem 1.2rem;
+      border-radius: 40px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: 0.15s;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      background: #0f4b70;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #eef2fa;
+      border: 1px solid #cbdde9;
+      padding: 0.7rem 1.2rem;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem;
+      color: #8ba2b6;
+      font-weight: 500;
+    }
+
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #5f7f9a;
+      border-top: 1px solid #dce7ef;
+      padding-top: 1.8rem;
+    }
+
+    @media (max-width: 780px) {
+      body { padding: 1rem; }
+      .pipeline-steps .arrow { display: none; }
+      .step { font-size: 0.7rem; min-width: 70px; }
+    }
+  </style>
+</head>
+<body>
+<div class="demo-container">
+  <!-- DevOps header with CI/CD simulation -->
+  <div class="devops-header">
+    <div class="title-section">
+      <h1>⚙️ TaskFlow · CI/CD Pipeline Demo</h1>
+      <p>🔁 Live frontend with simulated build, test & deploy stages — Git → Build → Test → Deploy</p>
+    </div>
+    <div class="pipeline-status">
+      <div class="pipeline-badge ci-badge">
+        <span class="icon">🔄</span> <span>pipeline: main</span>
+      </div>
+      <div class="live-indicator">
+        <span class="green-dot"></span> <span>auto-deploy · v2.3.1</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual CI/CD steps (dynamic based on actions) -->
+  <div class="pipeline-visual" id="pipelineVisual">
+    <div class="pipeline-steps" id="pipelineSteps">
+      <!-- steps injected via JS for reactivity, but static fallback -->
+    </div>
+    <div style="font-size:0.7rem; margin-top: 12px; text-align:right; opacity:0.6">
+      ⚡ pipeline triggered on task create / edit / delete
+    </div>
+  </div>
+
+  <!-- Task Manager core -->
+  <div class="task-dashboard">
+    <!-- Task list panel -->
+    <div class="task-panel">
+      <div class="panel-header">
+        <h2>📋 Development Tasks</h2>
+        <span class="task-count" id="taskCounter">0 tasks</span>
+      </div>
+      <div class="task-list" id="taskListContainer">
+        <!-- dynamic task list -->
+        <div class="empty-state">✨ No tasks yet. Create your first task to trigger the pipeline!</div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Task Form -->
+    <div class="form-panel">
+      <h3 id="formTitle">➕ Add new task</h3>
+      <div class="input-group">
+        <label>📌 Task title</label>
+        <input type="text" id="taskInput" placeholder="e.g., Implement login module" autocomplete="off">
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" id="saveTaskBtn">💾 Save Task</button>
+        <button class="btn-secondary" id="cancelEditBtn" style="display: none;">Cancel</button>
+      </div>
+      <div style="margin-top: 1rem; font-size:0.75rem; background:#F1F5F9; border-radius: 20px; padding: 0.6rem 1rem;">
+        <span>🔧 DevOps hint: each mutation triggers <strong>CI/CD simulation</strong> (build, test, deploy steps)</span>
+      </div>
+    </div>
+  </div>
+  <footer>
+    🚀 CI/CD pipeline demo | Git commit → Build (eslint) → Test (unit) → Deploy (preview) | Every task change triggers pipeline simulation
+  </footer>
+</div>
+
+<script>
+  // ---------- TASK MANAGER STATE ----------
+  let tasks = [];
+  let editMode = false;
+  let editTaskId = null;
+
+  // DOM elements
+  const taskInput = document.getElementById('taskInput');
+  const saveBtn = document.getElementById('saveTaskBtn');
+  const cancelBtn = document.getElementById('cancelEditBtn');
+  const formTitle = document.getElementById('formTitle');
+  const taskListContainer = document.getElementById('taskListContainer');
+  const taskCounterSpan = document.getElementById('taskCounter');
+
+  // Pipeline step elements container
+  const pipelineStepsDiv = document.getElementById('pipelineSteps');
+
+  // pipeline stage names (for visual)
+  const STAGES = ['📦 Git Commit', '🔨 Build', '🧪 Test', '🚀 Deploy'];
+  let currentPipelineStage = -1;   // -1 idle, 0..3 active stage
+  let pipelineTimeout = null;
+
+  // Helper: render task list UI
+  function renderTasks() {
+    if (!taskListContainer) return;
+    if (tasks.length === 0) {
+      taskListContainer.innerHTML = `<div class="empty-state">📭 No tasks yet. Create your first task to trigger the pipeline!</div>`;
+      taskCounterSpan.innerText = `0 tasks`;
+      return;
+    }
+
+    taskCounterSpan.innerText = `${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'}`;
+    const tasksHtml = tasks.map(task => `
+      <div class="task-item" data-id="${task.id}">
+        <div class="task-info">
+          <input type="checkbox" class="task-check" ${task.completed ? 'checked' : ''} data-id="${task.id}">
+          <span class="task-title ${task.completed ? 'completed' : ''}">${escapeHtml(task.title)}</span>
+        </div>
+        <div class="task-actions">
+          <button class="edit-btn" data-id="${task.id}" title="Edit task">✏️</button>
+          <button class="delete-btn" data-id="${task.id}" title="Delete task">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+    taskListContainer.innerHTML = tasksHtml;
+
+    // attach events after render
+    document.querySelectorAll('.task-check').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const id = parseInt(e.target.getAttribute('data-id'));
+        toggleTaskCompletion(id);
+      });
+    });
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(btn.getAttribute('data-id'));
+        startEditTask(id);
+      });
+    });
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(btn.getAttribute('data-id'));
+        deleteTaskById(id);
+      });
+    });
+  }
+
+  // helper escapeHtml
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+      return c;
+    });
+  }
+
+  // Data persistence with localStorage
+  function saveToLocalStorage() {
+    localStorage.setItem('devops_tasks', JSON.stringify(tasks));
+  }
+
+  function loadFromLocalStorage() {
+    const stored = localStorage.getItem('devops_tasks');
+    if (stored) {
+      try {
+        tasks = JSON.parse(stored);
+        if (!Array.isArray(tasks)) tasks = [];
+      } catch(e) { tasks = []; }
+    } else {
+      // initial seed tasks for nice demo
+      tasks = [
+        { id: Date.now() + 1, title: 'Setup CI/CD pipeline config', completed: true },
+        { id: Date.now() + 2, title: 'Write unit tests for task manager', completed: false },
+        { id: Date.now() + 3, title: 'Deploy frontend to staging', completed: false },
+      ];
+      saveToLocalStorage();
+    }
+    renderTasks();
+  }
+
+  // Core CRUD + pipeline trigger
+  function triggerPipelineSimulation(operationName) {
+    // clear previous animation
+    if (pipelineTimeout) clearTimeout(pipelineTimeout);
+    // reset all step classes
+    const stepElements = document.querySelectorAll('.step');
+    stepElements.forEach(step => {
+      step.classList.remove('active', 'success');
+    });
+    // start pipeline simulation: iterate stages
+    currentPipelineStage = 0;
+    function runStage(index) {
+      if (index >= STAGES.length) {
+        // pipeline finished: mark all as success? we'll set all to success style after final
+        stepElements.forEach((step, idx) => {
+          step.classList.remove('active');
+          step.classList.add('success');
+        });
+        // also log in console for devops feel
+        console.log(`✅ Pipeline SUCCESS for operation: ${operationName} at ${new Date().toLocaleTimeString()}`);
+        // small extra: show deploy done
+        currentPipelineStage = -1;
+        return;
+      }
+      // remove active from all and set current active
+      stepElements.forEach((step, i) => {
+        step.classList.remove('active');
+        if (i < index) step.classList.add('success');
+        else if (i === index) step.classList.add('active');
+        else step.classList.remove('success');
+      });
+      // simulate async step duration
+      pipelineTimeout = setTimeout(() => {
+        runStage(index + 1);
+      }, 500);
+    }
+    // build step elements again after render (just in case)
+    const freshSteps = document.querySelectorAll('.step');
+    if (freshSteps.length === STAGES.length) {
+      runStage(0);
+    } else {
+      // fallback recreate steps visual
+      updatePipelineVisual();
+      setTimeout(() => {
+        const newSteps = document.querySelectorAll('.step');
+        if (newSteps.length) runStage(0);
+      }, 20);
+    }
+  }
+
+  function updatePipelineVisual() {
+    if (!pipelineStepsDiv) return;
+    const stepsHtml = STAGES.map((stage, idx) => `
+      <div class="step" data-stage="${idx}">${stage}</div>
+      ${idx < STAGES.length-1 ? '<span class="arrow">→</span>' : ''}
+    `).join('');
+    pipelineStepsDiv.innerHTML = stepsHtml;
+  }
+
+  // task operations (with pipeline trigger)
+  function addTask(title) {
+    if (!title.trim()) return false;
+    const newTask = {
+      id: Date.now(),
+      title: title.trim(),
+      completed: false,
+    };
+    tasks.push(newTask);
+    saveToLocalStorage();
+    renderTasks();
+    triggerPipelineSimulation('CREATE_TASK');
+    return true;
+  }
+
+  function updateTask(id, newTitle) {
+    const task = tasks.find(t => t.id === id);
+    if (task && newTitle.trim()) {
+      task.title = newTitle.trim();
+      saveToLocalStorage();
+      renderTasks();
+      triggerPipelineSimulation('EDIT_TASK');
+      return true;
+    }
+    return false;
+  }
+
+  function deleteTaskById(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    saveToLocalStorage();
+    renderTasks();
+    triggerPipelineSimulation('DELETE_TASK');
+    if (editMode && editTaskId === id) resetForm();
+  }
+
+  function toggleTaskCompletion(id) {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      task.completed = !task.completed;
+      saveToLocalStorage();
+      renderTasks();
+      triggerPipelineSimulation('TOGGLE_TASK');
+    }
+  }
+
+  // Edit mode handling
+  function startEditTask(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    editMode = true;
+    editTaskId = id;
+    taskInput.value = task.title;
+    formTitle.innerText = '✏️ Edit task';
+    saveBtn.innerText = 'Update Task';
+    cancelBtn.style.display = 'block';
+    taskInput.focus();
+  }
+
+  function resetForm() {
+    editMode = false;
+    editTaskId = null;
+    taskInput.value = '';
+    formTitle.innerText = '➕ Add new task';
+    saveBtn.innerText = '💾 Save Task';
+    cancelBtn.style.display = 'none';
+  }
+
+  function handleSave() {
+    const title = taskInput.value;
+    if (!title.trim()) {
+      alert('Task title cannot be empty');
+      return;
+    }
+    if (editMode && editTaskId !== null) {
+      updateTask(editTaskId, title);
+      resetForm();
+    } else {
+      addTask(title);
+      taskInput.value = '';
+    }
+  }
+
+  // Cancel edit
+  function handleCancel() {
+    resetForm();
+  }
+
+  // initialize everything and attach event listeners
+  function init() {
+    updatePipelineVisual();
+    loadFromLocalStorage();
+    // attach form events
+    saveBtn.addEventListener('click', handleSave);
+    cancelBtn.addEventListener('click', handleCancel);
+    taskInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleSave();
+    });
+    // optional: initial pipeline animation to show demo pipeline on load
+    setTimeout(() => {
+      // show pipeline idle but highlight last success? better to show success state on existing tasks
+      const steps = document.querySelectorAll('.step');
+      if (steps.length) {
+        steps.forEach(step => step.classList.add('success'));
+      }
+      console.log('✅ Pipeline ready — last deployment stable');
+    }, 200);
+  }
+
+  // extra sync with localStorage if multiple tabs (optional)
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'devops_tasks') {
+      loadFromLocalStorage();
+      renderTasks();
+    }
+  });
+
+  init();
+</script>
+</body>
+</html>
